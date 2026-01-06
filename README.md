@@ -1,10 +1,10 @@
-# Automotive History Trivia
+# Azure Cloud Certification Quiz
 
-A fully functional Progressive Web App (PWA) trivia game testing your knowledge of automotive history.
+A fully functional Progressive Web App (PWA) quiz app to help you prepare for Azure cloud certifications.
 
 ## ✨ Features
 
-- 🎮 **Engaging Trivia Gameplay** - Test your automotive knowledge
+- 🎮 **Engaging Quiz Gameplay** - Test your Azure cloud knowledge
 - 📱 **Responsive Design** - Works on all devices (desktop, tablet, mobile)
 - 🚀 **Progressive Web App** - Install on any device, works offline
 - 🎨 **Beautiful Graphics** - High-quality images and animations
@@ -41,7 +41,7 @@ See `DEPLOYMENT.md` for detailed instructions.
 ## 📁 Project Structure
 
 ```
-automotive-history-trivia/
+azure-cloud-certification-quiz/
 ├── index.html              # Main HTML file
 ├── game.js                 # Game logic
 ├── game.css                # Styles
@@ -98,7 +98,7 @@ automotive-history-trivia/
 ### Desktop (Chrome/Edge)
 1. Open the game in browser
 2. Click the install icon in the address bar
-3. Or: Menu → Install Automotive History Trivia
+3. Or: Menu → Install Azure Cloud Certification Quiz
 
 ### Mobile (Android)
 1. Open in Chrome
@@ -199,4 +199,4 @@ To update the game:
 
 ---
 
-Made with ❤️ for automotive enthusiasts
+Made with ❤️ for Azure certification candidates

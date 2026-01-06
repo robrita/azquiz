@@ -1,7 +1,7 @@
 {
-  "name": "Automotive History Trivia",
-  "short_name": "Auto Trivia",
-  "description": "Test your knowledge of automotive history with this engaging trivia game",
+  "name": "Azure Cloud Certification Quiz",
+  "short_name": "Azure Quiz",
+  "description": "Test your Azure cloud knowledge and prepare for certification exams",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
