@@ -1,0 +1,202 @@
+{
+  "1": {
+    "question": "What color were all Ferraris originally?",
+    "description": "Red was the color that the International Automobile Federation (FIA) assigned to all Italian Grand Prix racecars in the early years of auto racing.",
+    "textAnswer": {
+      "1": "Red",
+      "2": "Blue",
+      "3": "White",
+      "4": "Yellow"
+    }
+  },
+  "2": {
+    "question": "What do the letters in BMW stand for?",
+    "description": "BMW stands for Bayerische Motoren Werke, or, translated into English, Bavarian Motor Works.",
+    "textAnswer": {
+      "1": "Bavarian Motor Works",
+      "2": "Belgian Motor Works",
+      "3": "Berlin Motor Works",
+      "4": "Bonn Motor Works"
+    }
+  },
+  "3": {
+    "question": "What is Toyata's luxury division called?",
+    "description": "The Lexus brand is marketed in more than 70 countries and territories worldwide and has become Japan's largest-selling make of premium cars.",
+    "textAnswer": {
+      "1": "Lexus",
+      "2": "Volvo",
+      "3": "Acura",
+      "4": "Infiniti"
+    }
+  },
+  "4": {
+    "question": "What are special performance editions of Honda cars called?",
+    "description": "The design of Type R models was originally focused on race conditions, with an emphasis on minimizing weight, and maximizing performance potential.",
+    "textAnswer": {
+      "1": "Type R",
+      "2": "Type D",
+      "3": "Type M",
+      "4": "Type A"
+    }
+  },
+  "5": {
+    "question": "What animal is on the Porsche logo?",
+    "description": "The horse on the logo, which was taken from Stuttgart's Coat of Arms, represents the stud farm on which the city was built.",
+    "textAnswer": {
+      "1": "Horse",
+      "2": "Bird",
+      "3": "Lion",
+      "4": "Bull"
+    }
+  },
+  "6": {
+    "question": "What was the first car to be mass-produced?",
+    "description": "Henry Ford introduced the assembly line in December of 1908, and as a result he was not only able to mass-produce the Model-T, but was able to offer it to his customers at a much lower price than the competition. By 1913, Ford was producing half of all cars sold in the United States, and by 1927, he had sold more than 15 million Model-Ts!",
+    "textAnswer": {
+      "1": "Model T",
+      "2": "Duryea Motor Wagon",
+      "3": "Model A",
+      "4": "Packard"
+    }
+  },
+  "7": {
+    "question": "What was the first Japanese car to be produced in the United States?",
+    "description": "In November of 1982, the first American-produced Honda Accord rolled off the assembly line at the Marysville Auto Plant in Ohio. The Accord would prove quite popular. In its first year of production, it became the best-selling Japanese car in the United States -- a title which it would hold for the next 15 years.",
+    "textAnswer": {
+      "1": "Honda Accord",
+      "2": "Toyota Camry",
+      "3": "Nissan Maxima",
+      "4": "Mazda Miata"
+    }
+  },
+  "8": {
+    "question": "What year was the Corvette first introduced?",
+    "description": "The first Chevrolet Corvette rolled off the production line on June 30, 1953, at the GM plant in Flint, Michigan. Only 300 Corvettes were built that year (each of them by hand), making this the rarest Corvette.",
+    "textAnswer": {
+      "1": "1953",
+      "2": "1963",
+      "3": "1943",
+      "4": "1973"
+    }
+  },
+  "9": {
+    "question": "What kind of car inspired Ferruccio Lamborghini to start his own automobile company?",
+    "description": "Ferruccio famously owned a Ferrari 250GT, which he repeatedly took in to be serviced at the Maranello headquarters because of a faulty clutch. When he politely asked Enzo Ferrari for a replacement part, Ferrari replied \"You're just a silly tractor manufacturer, how could you possibly know anything about sports cars?\" Like any red blooded Italian, he spat on the floor, walked out and started designing his own sports car.",
+    "textAnswer": {
+      "1": "Ferrari",
+      "2": "Volkswagon",
+      "3": "BMW",
+      "4": "Alfa Romeo"
+    }
+  },
+  "10": {
+    "question": "What was the first car to come equipped with anti-lock brakes?",
+    "description": "The 1966 Jensen FF came equipped with the Dunlop Maxaret anti-lock braking system (originally developed for use on aircraft). Although crude by today's standards (and sometimes unreliable), the Jensen FF's anti-skid system was a huge technological breakthrough at the time.",
+    "textAnswer": {
+      "1": "Jensen FF",
+      "2": "Lincoln Continental Mark III",
+      "3": "Shelby Cobra",
+      "4": "BMW 1600"
+    }
+  },
+  "11": {
+    "question": "What was the first commercially available hybrid gasoline-electric car in the United States?",
+    "description": "The two-door Honda Insight, first produced in 1999, won numerous awards (including International Engine of the Year) and earned EPA mileage ratings of 61 mpg in the city and 70 mpg on the highway, making it the world's most fuel-efficient car.",
+    "textAnswer": {
+      "1": "Honda Insight",
+      "2": "Saturn Vue",
+      "3": "Ford Escape Hybrid",
+      "4": "Toyota Prius"
+    }
+  },
+  "12": {
+    "question": "How much horse power did the first Porsche 911 have?",
+    "description": "The original Porsche 911, introduced in 1964, boasted an impressive 130 hp @ 6100 rpm and a top speed of about 130 mph (209 km/h).",
+    "textAnswer": {
+      "1": "130 HP",
+      "2": "180 HP",
+      "3": "90 HP",
+      "4": "35 HP"
+    }
+  },
+  "13": {
+    "question": "Which Mercedes-Benz concept car featured a joystick instead of a steering wheel?",
+    "description": "The Mercedes-Benz F200 \"Imagination\" coupe featured a drive by joystick design that could be toggled between the driver and passenger.",
+    "textAnswer": {
+      "1": "F200",
+      "2": "F100",
+      "3": "F300",
+      "4": "F400"
+    }
+  },
+  "14": {
+    "question": "Which automobile manufacturer was the first to offer seat belts as an option?",
+    "description": "Nash Motors Company, an American automobile manufacturer originally based in Kenosha, Wisconsin, pioneered several important innovations, including the heating and ventilation system still used today (1938), unibody construction (1941), and seat belts (1950).",
+    "textAnswer": {
+      "1": "NASH",
+      "2": "Toyota",
+      "3": "Ford",
+      "4": "Cadillac"
+    }
+  },
+  "15": {
+    "question": "In 2019, what level of self-driving cars did Elon Musk predict by the end of the year?",
+    "description": "Level 5 is the dream: Unconditional (that is, no-limits) automated driving, with no expectation that a human driver will ever have to intervene.",
+    "textAnswer": {
+      "1": "Level 5",
+      "2": "Level 3",
+      "3": "Level 2",
+      "4": "Level 4"
+    }
+  },
+  "16": {
+    "question": "What was the first production car in the world with laser headlights?",
+    "description": "The optional laser lights on the BMW I8 ensure a high beam range of up to 600 meters, effectively doubling the illumination range of modern LED high beams.",
+    "textAnswer": {
+      "1": "BMW I8",
+      "2": "BMW Z1",
+      "3": "BMW E12",
+      "4": "BMW M1"
+    }
+  },
+  "17": {
+    "question": "Which model did Chevrolet ship vertically during the 1970s?",
+    "description": "The Vert-A-Pac shipping system, designed specifically for the Chevrolet Vega, made it possible to ship 30 vehicles per rail car, instead of 15.",
+    "textAnswer": {
+      "1": "Vega",
+      "2": "Citation",
+      "3": "Chevette",
+      "4": "Malibu"
+    }
+  },
+  "18": {
+    "question": "What was the Volkswagon Beetle called when it was first sold in the United States?",
+    "description": "On entry to the U.S. market (shortly after the end of World War II) the VW Beetle was briefly sold as a Victory Wagon.",
+    "textAnswer": {
+      "1": "Victory Wagon",
+      "2": "Liberty Wagon",
+      "3": "Freedom Wagon",
+      "4": "Kraut Wagon"
+    }
+  },
+  "19": {
+    "question": "The inventor of cruise control was?",
+    "description": "Modern cruise control was invented in 1948 by mechanical engineer Ralph Teetor who became blind at age five in an accident. His idea was borne out of the frustration of riding in a car driven by his lawyer, who kept speeding up and slowing down as he talked.",
+    "textAnswer": {
+      "1": "A Blind Man",
+      "2": "A Robot",
+      "3": "A 12-Years-Old Child",
+      "4": "A Homeless Man"
+    }
+  },
+  "20": {
+    "question": "What car sold more than one million units in 1965, setting a record that still stands today?",
+    "description": "Originally introduced in 1958, the Impala was the best-selling automobile in the United States during the 1960s. Early Impala models sported six taillights, a unique feature which, for a time, became the Impala trademark. The Impala was named after an African antelope.",
+    "textAnswer": {
+      "1": "Chevrolet Impala",
+      "2": "Ford Thunderbird",
+      "3": "Buick Wildcat",
+      "4": "Pontiac GTO"
+    }
+  }
+}
