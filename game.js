@@ -11430,6 +11430,10 @@ ig.module("game.entities.controller.main-menu-control").requires("impact.entity"
         btnSound: null,
         init: function(b, c, d) {
             this.parent(b, c, d);
+            // Desktop-only tweak: the play button graphic was oversized compared to in-quiz option buttons.
+            // Keep the larger size for mobile while reducing scale for desktop.
+            var isMobile = ig.ua && ig.ua.mobile;
+            var playBtnScale = isMobile ? 1.8 : 1.0;
             this.btnPlay = ig.game.spawnEntity(EntityButtonImage, -1E4, 50, {
                 pathImage: "media/graphics/sprites/play_btn.png",
                 clickCallBackContext: this,
@@ -11438,7 +11442,7 @@ ig.module("game.entities.controller.main-menu-control").requires("impact.entity"
                 zIndex: this.zIndex + 1,
                 mother: this,
                 anchorType: "middle-center",
-                imgScale: 1.8
+                imgScale: playBtnScale
             });
 
             // Sound toggle (top-right)
@@ -11582,15 +11586,26 @@ ig.module("game.entities.buttons.button-image").requires("game.entities.buttons.
                     this.mother && "number" === typeof this.mother.answerFontScaleFactor && (sharedScale = this.mother.answerFontScaleFactor);
 
                     // Desktop: slightly smaller base font so long questions/answers don't collide.
+                    // Mobile: enforce a readable minimum font size; prefer wrapping over shrinking.
                     var fontRatio = (ig.ua.mobile ? 0.19 : 0.22) * sharedScale;
                     var maxRatio = (ig.ua.mobile ? 0.26 : 0.28) * sharedScale;
                     var suggestedFontSize = Math.floor(scaledHeight * fontRatio);
-                    var minFontSize = ig.ua.mobile ? Math.floor(this.fontSize * 0.9 * sharedScale) : Math.floor(this.fontSize * this.imgScale * this.buttonScale * sharedScale);
+
+                    // On mobile, DO NOT scale the minimum down with sharedScale.
+                    // Otherwise long answers become unreadably small.
+                    var minFontSize = ig.ua.mobile ? Math.floor(this.fontSize * 0.9) : Math.floor(this.fontSize * this.imgScale * this.buttonScale * sharedScale);
                     var maxFontSize = Math.floor(scaledHeight * maxRatio);
                     var baseFontSize = Math.max(minFontSize, Math.min(suggestedFontSize, maxFontSize));
 
-                    var f = new ig.Textwrapper(baseFontSize, "quicksand-bold"),
+                    // If wrapping creates too many lines, reduce font size gently (but never below min).
+                    var f = new ig.Textwrapper(baseFontSize, "quicksand-bold");
+                    var e = f.wrapText(c, d);
+                    var maxLines = ig.ua.mobile ? 4 : 3;
+                    while (e.length > maxLines && baseFontSize > minFontSize) {
+                        baseFontSize = Math.max(minFontSize, baseFontSize - 2);
+                        f.textFontSize = baseFontSize;
                         e = f.wrapText(c, d);
+                    }
                     // Use consistent font size, only adjust vertical position based on lines
                     f.textFontSize = baseFontSize;
                     c = 0.5 * scaledWidth;
@@ -11856,10 +11871,10 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             // Desktop: slightly smaller base font and more aggressive scaling for long answers.
             // Same multiplier is applied to all buttons for a given question.
             if (!b || 0 >= b) return ig.ua.mobile ? 1 : 0.85;
-            var startChars = ig.ua.mobile ? 45 : 38;
-            var endChars = ig.ua.mobile ? 150 : 140;
+            var startChars = ig.ua.mobile ? 60 : 38;
+            var endChars = ig.ua.mobile ? 180 : 140;
             var baseFactor = ig.ua.mobile ? 1 : 0.85;
-            var minFactor = ig.ua.mobile ? 0.70 : 0.62;
+            var minFactor = ig.ua.mobile ? 0.85 : 0.62;
             if (b <= startChars) return baseFactor;
             var t = (b - startChars) / (endChars - startChars);
             t = Math.max(0, Math.min(1, t));
@@ -11930,15 +11945,16 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             var questionBottom = this.questionPanelBottomY || (screenHeight * 0.35);
             var marginBelowQuestion = Math.max(20, screenHeight * 0.03);
 
-            // Fixed spacing between buttons
-            var spacing = Math.max(18, Math.round(screenHeight * 0.02));
+            // Fixed spacing between buttons (keep tight on small screens)
+            var spacing = Math.max(14, Math.round(screenHeight * 0.015));
             
             // Calculate total height needed
             var totalHeight = (buttonHeight * totalButtons) + (spacing * (totalButtons - 1));
             
             // Start position relative to center. Negative moves buttons up.
             // Also enforce a bottom padding so the group never hugs the screen edge.
-            var bottomPadding = Math.max(30, screenHeight * 0.08);
+            // Reduce excessive bottom padding so buttons can grow/use space.
+            var bottomPadding = Math.max(18, screenHeight * 0.04);
 
             // Desired top (absolute) for first button is just below the question panel.
             var desiredTopAbsY = questionBottom + marginBelowQuestion;
@@ -11948,7 +11964,7 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             if (availableHeight > 0 && totalHeight > availableHeight) {
                 var fitScale = (availableHeight - spacing * (totalButtons - 1)) / (actualButtonHeight * totalButtons);
                 // Keep within a sane range.
-                fitScale = Math.max(0.55, Math.min(fitScale, mobileScale));
+                fitScale = Math.max(0.65, Math.min(fitScale, mobileScale));
                 mobileScale = fitScale;
                 buttonHeight = actualButtonHeight * mobileScale;
                 totalHeight = (buttonHeight * totalButtons) + (spacing * (totalButtons - 1));
@@ -12040,9 +12056,10 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             
             b.save();
             b.fillStyle = "#ffffff";
-            // Larger font size on mobile
-            var questionFontSize = ig.ua.mobile ? 78 : 68;
-            var questionLineHeight = ig.ua.mobile ? 88 : 78;
+            // Larger font size on mobile, but compact when answers are long so buttons stay readable.
+            var longAnswerMode = ig.ua.mobile && this.answerFontScaleFactor && this.answerFontScaleFactor < 0.92;
+            var questionFontSize = ig.ua.mobile ? (longAnswerMode ? 66 : 78) : 68;
+            var questionLineHeight = ig.ua.mobile ? (longAnswerMode ? 74 : 88) : 78;
             var questionMaxWidth = ig.ua.mobile ? ig.system.width * 0.98 : this.maxWidthQuestion * 1.4;
             b.font = (ig.ua.mobile ? 82 : ig.game.fontSize + 20) + "px quicksand-regular";
             b.textAlign = "left";
@@ -12055,7 +12072,7 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             
             // Calculate dynamic overlay dimensions based on text lines
             var questionPanelScaleX = ig.ua.mobile ? Math.min(ig.responsive.scaleX, ig.responsive.scaleY) * 2.2 : Math.min(ig.responsive.scaleX, ig.responsive.scaleY) * 1.6;
-            var verticalPadding = ig.ua.mobile ? 60 : 50;
+            var verticalPadding = ig.ua.mobile ? (longAnswerMode ? 45 : 60) : 50;
             var dynamicOverlayHeight = (f.length * questionLineHeight) + (verticalPadding * 2);
             // Clamp overlay width so it doesn't exceed the viewport.
             var maxOverlayWidth = ig.system.width * 0.98;
@@ -12063,7 +12080,7 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             var overlayWidth = this.imgQuestion.width * scaleX;
 
             // Position from the top so it never renders off-screen on desktop.
-            var topMargin = ig.ua.mobile ? Math.max(30, ig.system.height * 0.05) : Math.max(30, ig.system.height * 0.06);
+            var topMargin = ig.ua.mobile ? Math.max(24, ig.system.height * (longAnswerMode ? 0.035 : 0.05)) : Math.max(30, ig.system.height * 0.06);
             var overlayY = topMargin + dynamicOverlayHeight * 0.5;
 
             // Persist metrics for layout calculations in update() (e.g., answer button placement).
