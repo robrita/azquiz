@@ -8358,7 +8358,7 @@ ig.module("plugins.audio.jukebox-player").requires("plugins.audio.sound-player")
                 this.soundList[d] = d;
                 var f = b[d].path;
                 this.jukeboxPlayer = new jukebox.Player({
-                    resources: [f + "." + ig.Sound.FORMAT.OGG.ext, f + "." + ig.Sound.FORMAT.MP3.ext],
+                    resources: [f + "." + ig.Sound.FORMAT.MP3.ext, f + "." + ig.Sound.FORMAT.OGG.ext],
                     autoplay: !1,
                     spritemap: {
                         music: {
@@ -8427,11 +8427,8 @@ ig.module("plugins.audio.webaudio-music-player").requires("plugins.audio.sound-p
                 console.log("Web Audio API not supported in this browser."), this.webaudio = null, this.useHTML5Audio = !0
             }
 
-            // Autoplay policies often leave WebAudio contexts "suspended" until a user gesture.
-            // Prefer HTML5 Audio so we can attempt muted-autoplay on initial load.
-            try {
-                this.webaudio && this.webaudio.context && "suspended" === this.webaudio.context.state && (this.webaudio = null, this.useHTML5Audio = !0);
-            } catch (c) {}
+            // Note: a WebAudio context being "suspended" is normal until a user gesture.
+            // Do not downgrade to HTML5 Audio here; we unlock/resume on first interaction.
 
             if (this.useHTML5Audio)
                 if ("undefined" !== typeof Audio) try {
@@ -8546,7 +8543,7 @@ ig.module("plugins.audio.webaudio-music-player").requires("plugins.audio.sound-p
                         c = f + "." + ig.Sound.FORMAT.OGG.ext,
                         f = f + "." + ig.Sound.FORMAT.MP3.ext,
                         e = null;
-                    this.codecs[ig.Sound.FORMAT.OGG.ext.toLowerCase()] ? e = c : this.codecs[ig.Sound.FORMAT.MP3.ext.toLowerCase()] && (e = f);
+                    this.codecs[ig.Sound.FORMAT.MP3.ext.toLowerCase()] ? e = f : this.codecs[ig.Sound.FORMAT.OGG.ext.toLowerCase()] && (e = c);
                     if (e) {
                         ig.ua.mobile ? ig.ua.iOS && (e = f) : (b = navigator.userAgent.toLowerCase(), -1 != b.indexOf("safari") && -1 >= b.indexOf("chrome") && (e = f));
                         this.audio.addEventListener("error", function() {
@@ -8728,7 +8725,34 @@ ig.module("plugins.audio.sound-handler").requires("plugins.audio.impact-music-pl
                 }), this.bgmPlayer.isSupported || (this.bgmPlayer = new ImpactMusicPlayer(this.soundInfo.bgm, {
                     loop: !0
                 })));
-            this.sfxPlayer = new HowlerPlayer(this.soundInfo.sfx)
+            this.sfxPlayer = new HowlerPlayer(this.soundInfo.sfx);
+
+            // Autoplay policies block audio until a user gesture. Unlock and start BGM once.
+            try {
+                if (!this._bgmAutostartAttached) {
+                    this._bgmAutostartAttached = !0;
+                    var b = function() {
+                        try {
+                            this.unlockWebAudio();
+                            if (this.bgmPlayer && !this.bgmPlayer.stayMuteFlag && !this.bgmPlayer.bgmPlaying && !this.bgmPlayer.muteFlag && "function" === typeof this.bgmPlayer.play) {
+                                this.bgmPlayer.play();
+                            }
+                        } catch (c) {}
+
+                        try {
+                            window.removeEventListener("pointerdown", b, !0);
+                            window.removeEventListener("mousedown", b, !0);
+                            window.removeEventListener("touchstart", b, !0);
+                            window.removeEventListener("keydown", b, !0);
+                        } catch (c) {}
+                    }.bind(this);
+
+                    window.addEventListener("pointerdown", b, !0);
+                    window.addEventListener("mousedown", b, !0);
+                    window.addEventListener("touchstart", b, !0);
+                    window.addEventListener("keydown", b, !0);
+                }
+            } catch (b) {}
         },
         unlockWebAudio: function() {
             Howler && (Howler.ctx && "running" !== Howler.ctx.state && Howler.ctx.resume(),
@@ -11846,17 +11870,7 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             this.parent()
         },
         landscapeUpdate: function() {
-            // Keep original layout on mobile landscape; apply the dynamic-below-question layout on desktop.
-            if (ig.ua.mobile) {
-                for (var b = 0.25 * ig.system.width, c = 0.5 * this.arrAnswer[0].size.x, d = 0; d < this.arrAnswer.length; d++) {
-                    var f = this.arrAnswer[d];
-                    0 == d % 2 ? (f.anchoredPositionX = -b - c, 1450 < ig.system.width && (f.anchoredPositionX = -700)) : (f.anchoredPositionX = b - c, 1450 < ig.system.width && (f.anchoredPositionX = 26));
-                    f.anchoredPositionY = 1 < d ? 280 : 0
-                }
-                return;
-            }
-
-            // Desktop/landscape is where question text can grow tall; keep answers below the question panel.
+            // Landscape is where question text can grow tall; keep answers below the question panel.
             var screenH = ig.system.height;
             var screenW = ig.system.width;
 
@@ -11867,12 +11881,12 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             var halfBtnW = 0.5 * this.arrAnswer[0].size.x;
 
             var buttonH = this.arrAnswer[0].size.y || 140;
-            var gapY = Math.max(20, 0.18 * buttonH);
+            var gapY = Math.max(18, 0.18 * buttonH);
             var bottomPadding = Math.max(20, 0.06 * screenH);
-            var marginBelowQuestion = Math.max(18, 0.02 * screenH);
+            var marginBelowQuestion = Math.max(20, 0.03 * screenH);
 
             // `questionPanelBottomY` is computed in draw(); fall back to a safe-ish top region.
-            var questionBottom = this.questionPanelBottomY || (0.30 * screenH);
+            var questionBottom = this.questionPanelBottomY || (0.32 * screenH);
             var minRow0AbsY = questionBottom + marginBelowQuestion;
 
             // Keep both rows visible.
@@ -11911,8 +11925,13 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             }
             var buttonHeight = actualButtonHeight * mobileScale;
             
+            // Ensure a consistent gap between the question panel and the first button.
+            // Use screen-based spacing so it works across devices.
+            var questionBottom = this.questionPanelBottomY || (screenHeight * 0.35);
+            var marginBelowQuestion = Math.max(20, screenHeight * 0.03);
+
             // Fixed spacing between buttons
-            var spacing = 35; // 35px gap between buttons
+            var spacing = Math.max(18, Math.round(screenHeight * 0.02));
             
             // Calculate total height needed
             var totalHeight = (buttonHeight * totalButtons) + (spacing * (totalButtons - 1));
@@ -11920,10 +11939,27 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             // Start position relative to center. Negative moves buttons up.
             // Also enforce a bottom padding so the group never hugs the screen edge.
             var bottomPadding = Math.max(30, screenHeight * 0.08);
-            var startY = -Math.min(90, screenHeight * 0.12);
-            var maxStartY = (screenHeight * 0.5) - bottomPadding - totalHeight;
-            startY = Math.min(startY, maxStartY);
-            startY = Math.max(startY, -screenHeight * 0.5 + 20);
+
+            // Desired top (absolute) for first button is just below the question panel.
+            var desiredTopAbsY = questionBottom + marginBelowQuestion;
+            var availableHeight = screenHeight - bottomPadding - desiredTopAbsY;
+
+            // If the buttons won't fit below the question, scale them down to fit.
+            if (availableHeight > 0 && totalHeight > availableHeight) {
+                var fitScale = (availableHeight - spacing * (totalButtons - 1)) / (actualButtonHeight * totalButtons);
+                // Keep within a sane range.
+                fitScale = Math.max(0.55, Math.min(fitScale, mobileScale));
+                mobileScale = fitScale;
+                buttonHeight = actualButtonHeight * mobileScale;
+                totalHeight = (buttonHeight * totalButtons) + (spacing * (totalButtons - 1));
+            }
+
+            // Convert absolute top into anchored coordinate space.
+            var startYAbs = Math.max(desiredTopAbsY, 20);
+            // Keep the group on-screen (prefer preserving the gap; only clamp if necessary).
+            var maxStartAbsY = screenHeight - bottomPadding - totalHeight;
+            if (startYAbs > maxStartAbsY) startYAbs = Math.max(20, maxStartAbsY);
+            var startY = startYAbs - 0.5 * screenHeight;
             
             for (var b = 0; b < this.arrAnswer.length; b++) {
                 var c = this.arrAnswer[b];
