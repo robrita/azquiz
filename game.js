@@ -8426,6 +8426,13 @@ ig.module("plugins.audio.webaudio-music-player").requires("plugins.audio.sound-p
             } catch (c) {
                 console.log("Web Audio API not supported in this browser."), this.webaudio = null, this.useHTML5Audio = !0
             }
+
+            // Autoplay policies often leave WebAudio contexts "suspended" until a user gesture.
+            // Prefer HTML5 Audio so we can attempt muted-autoplay on initial load.
+            try {
+                this.webaudio && this.webaudio.context && "suspended" === this.webaudio.context.state && (this.webaudio = null, this.useHTML5Audio = !0);
+            } catch (c) {}
+
             if (this.useHTML5Audio)
                 if ("undefined" !== typeof Audio) try {
                     new Audio
@@ -9452,6 +9459,16 @@ ig.module("plugins.splash-loader").requires("impact.loader", "impact.animation")
                     } catch (c) {
                         console.log(c)
                     }
+
+                    // Start background music as soon as audio is unlocked (required by most browsers).
+                    try {
+                        if ("undefined" !== typeof ig && ig.soundHandler && ig.soundHandler.bgmPlayer && "function" === typeof ig.soundHandler.bgmPlayer.play) {
+                            "function" === typeof ig.soundHandler.unlockWebAudio && ig.soundHandler.unlockWebAudio();
+                            ig.soundHandler.bgmPlayer.play();
+                        }
+                    } catch (c) {
+                        console.log(c)
+                    }
                     this.setAttribute("style", "visibility: hidden;");
                     "function" === typeof b && b()
                 })
@@ -9479,7 +9496,11 @@ ig.module("plugins.splash-loader").requires("impact.loader", "impact.animation")
                 c = Math.max(c.width / 1280, c.height / 720);
             ig.responsive.drawScaledImage(this.splashDesktop, b.x, b.y,
                 c, c, 0.5, 0.525);
-            ig.responsive.drawScaledImage(this.imgTitle, b.x, b.y - 300, 0.8, 0.8, 0.5, 0);
+            var d = ig.ua && ig.ua.mobile && 600 >= Math.min(window.innerWidth, window.innerHeight),
+                f = d ? 1.25 : 0.8,
+                e = d ? 470 : 300;
+            d && (f = Math.min(f, 0.92 * ig.responsive.width / this.imgTitle.width));
+            ig.responsive.drawScaledImage(this.imgTitle, b.x, b.y - e, f, f, 0.5, 0);
             ig.system.context.fillStyle = "#ffffff";
             ig.system.context.font = "16px dimbo";
             this.border.draw(0.5 * ig.system.width - 0.5 * this.border.width, 0.7 * ig.system.height);
@@ -11380,27 +11401,60 @@ ig.module("game.entities.controller.main-menu-control").requires("impact.entity"
         imgBG: new ig.Image("media/graphics/splash/splash.png"),
         imgTitle: new ig.Image("media/graphics/sprites/title.png"),
         enabled: !0,
+        btnPlay: null,
+        btnPlayAnchored: !1,
+        btnSound: null,
         init: function(b, c, d) {
             this.parent(b, c, d);
-            ig.game.spawnEntity(EntityButtonImage, -139, 50, {
+            this.btnPlay = ig.game.spawnEntity(EntityButtonImage, -1E4, 50, {
                 pathImage: "media/graphics/sprites/play_btn.png",
                 clickCallBackContext: this,
                 clickCallBack: this.onPlay,
                 name: "btn-play",
                 zIndex: this.zIndex + 1,
                 mother: this,
-                anchorType: "middle-center"
+                anchorType: "middle-center",
+                imgScale: 1.8
             });
+
+            // Sound toggle (top-right)
+            this.btnSound = ig.game.spawnEntity(EntityButtonImage, -170, 30, {
+                pathImage: ig.game.bgmOn ? "media/graphics/sprites/sound_btn_on.png" : "media/graphics/sprites/sound_btn_off.png",
+                clickCallBackContext: this,
+                clickCallBack: this.onToggleSound,
+                name: "btn-sound",
+                zIndex: 10002,
+                anchorType: "top-right",
+                imgScale: 1
+            });
+
             ig.game.spawnEntity(ig.FullscreenButton, 10, 10, {
                 enterImage: new ig.Image("media/graphics/sprites/enter-fullscreen.png"),
                 exitImage: new ig.Image("media/graphics/sprites/exit-fullscreen.png")
             });
             ig.game.spawnEntity(EntityButtonMoreGames, 10, 180)
         },
+        update: function() {
+            this.parent();
+            if (!this.btnPlayAnchored && this.btnPlay && this.btnPlay.img && this.btnPlay.img.loaded) {
+                this.btnPlay.anchoredPositionX = -0.5 * this.btnPlay.size.x;
+                this.btnPlay.anchoredPositionY = 50;
+                this.btnPlayAnchored = !0;
+            }
+        },
         onPlay: function() {
             this.enabled && (this.enabled = !1, ig.game.spawnEntity(EntityBlackScreen, 0, 0, {
                 to: "LevelGame"
             }))
+        },
+        onToggleSound: function() {
+            ig.game.bgmOn = !ig.game.bgmOn;
+            ig.game.bgmOn ? (ig.soundHandler.unlockWebAudio && ig.soundHandler.unlockWebAudio(), ig.soundHandler.unmuteBGM(!0), ig.game.storage.set("azure-quiz-bgmOn", !0)) : (ig.soundHandler.muteBGM(!0), ig.game.storage.set("azure-quiz-bgmOn", !1));
+
+            if (this.btnSound && "function" === typeof this.btnSound.changeImage) {
+                this.btnSound.changeImage(ig.game.bgmOn ? "media/graphics/sprites/sound_btn_on.png" : "media/graphics/sprites/sound_btn_off.png");
+                this.btnSound.bolUpdateSize = !1;
+            }
         },
         draw: function() {
             var b =
@@ -11408,7 +11462,19 @@ ig.module("game.entities.controller.main-menu-control").requires("impact.entity"
                 c = ig.responsive,
                 c = Math.max(c.width / 1280, c.height / 720);
             ig.responsive.drawScaledImage(this.imgBGCover, b.x, b.y, c, c, 0.5, 0.525);
-            ig.responsive.drawScaledImage(this.imgTitle, b.x, b.y - 300, 0.8, 0.8, 0.5, 0);
+            var d = ig.ua && ig.ua.mobile && 600 >= Math.min(window.innerWidth, window.innerHeight),
+                f = d ? 1.25 : 0.8;
+            f *= 1.5;
+            d && (f = Math.min(f, 0.92 * ig.responsive.width / this.imgTitle.width));
+            var e;
+            if (this.btnPlay && this.btnPlay.img && this.btnPlay.img.loaded) {
+                var g = d ? 500 : 90;
+                e = this.btnPlay.pos.y - g - this.imgTitle.height * f;
+                e = Math.max(20, e);
+            } else {
+                e = b.y - (d ? 800 : 300);
+            }
+            ig.responsive.drawScaledImage(this.imgTitle, b.x, e, f, f, 0.5, 0);
             this.parent()
         }
     })
@@ -11671,15 +11737,21 @@ ig.module("game.entities.buttons.button-sound").requires("game.entities.buttons.
         name: "soundtest",
         init: function(b, c, d) {
             this.parent(b, c, d);
-            ig.global.wm || (this.addAnim("on", 1, [0]), this.addAnim("off", 1, [1]), this.currentAnim = ig.game.soundOn ? this.anims.on : this.anims.off)
+            ig.global.wm || (this.addAnim("on", 1, [0]), this.addAnim("off", 1, [1]), this.currentAnim = ig.game.sfxOn ? this.anims.on : this.anims.off)
         },
         draw: function() {
             this.parent()
         },
         clicked: function() {
             console.log("pressed");
-            ig.game.soundOn = !ig.game.soundOn;
-            ig.game.soundOn ? (ig.soundHandler.unmuteAll(!0), this.currentAnim = this.anims.on, ig.game.storage.set("trivia-soundOn", !0)) : (ig.soundHandler.muteAll(!0), this.currentAnim = this.anims.off, ig.game.storage.set("trivia-soundOn", !1))
+
+            // In-quiz toggle controls SFX only (BGM is controlled only from the homepage).
+            ig.game.sfxOn = !ig.game.sfxOn;
+            ig.game.soundOn = ig.game.sfxOn;
+            ig.game.sfxOn ? (ig.soundHandler.unmuteSFX(!0), this.currentAnim = this.anims.on, ig.game.storage.set("azure-quiz-sfxOn", !0)) : (ig.soundHandler.muteSFX(!0), this.currentAnim = this.anims.off, ig.game.storage.set("azure-quiz-sfxOn", !1));
+
+            // Legacy key for older builds
+            ig.game.storage.set("azure-quiz-soundOn", ig.game.sfxOn);
         },
         clicking: function() {},
         released: function() {}
@@ -12172,7 +12244,11 @@ ig.module("game.main").requires("impact.game", "plugins.patches.webkit-image-smo
         paused: false,
         tweens: null,
         tweening: false,
+        // Legacy: historically controlled both SFX and BGM.
+        // Keep as an alias for SFX so older code paths still work.
         soundOn: null,
+        sfxOn: !0,
+        bgmOn: !0,
         totalQuestion: null,
         maxQuestionInARound: 30,
         numCorrect: 0,
@@ -12198,9 +12274,17 @@ ig.module("game.main").requires("impact.game", "plugins.patches.webkit-image-smo
             if (!this.io._supportsLocalStorage()) {
                 console.log('Using fake storage');
                 this.storage = new ig.Storage();
-                this.storage.set('trivia-soundOn', this.soundOn);
+                this.storage.set('azure-quiz-soundOn', this.soundOn);
             }
-            this.soundOn = this.storage.get('trivia-soundOn') !== null ? this.storage.get('trivia-soundOn') : this.soundOn;
+
+            // Split settings: `bgmOn` (homepage button) and `sfxOn` (in-quiz button).
+            // Back-compat: if legacy `azure-quiz-soundOn` exists, use it as default for both.
+            var legacySoundOn = this.storage.get('azure-quiz-soundOn');
+            this.sfxOn = this.storage.get('azure-quiz-sfxOn') !== null ? this.storage.get('azure-quiz-sfxOn') : (legacySoundOn !== null ? legacySoundOn : !0);
+            this.bgmOn = this.storage.get('azure-quiz-bgmOn') !== null ? this.storage.get('azure-quiz-bgmOn') : (legacySoundOn !== null ? legacySoundOn : !0);
+
+            // Keep `soundOn` aligned with SFX for older call sites.
+            this.soundOn = this.sfxOn;
 
             this.setupUrlParams = new ig.UrlParameters();
             this.removeLoadingWheel();
@@ -12211,13 +12295,25 @@ ig.module("game.main").requires("impact.game", "plugins.patches.webkit-image-smo
             this.loadData();
         },
         loadData: function() {
-            if (ig.game.soundOn) {
-                ig.soundHandler.unmuteAll(true);
-                ig.game.storage.set('trivia-soundOn', true);
+            // Apply persisted sound settings
+            if (ig.game.sfxOn) {
+                ig.soundHandler.unmuteSFX(true);
+                ig.game.storage.set('azure-quiz-sfxOn', true);
             } else {
-                ig.soundHandler.muteAll(true);
-                ig.game.storage.set('trivia-soundOn', false);
+                ig.soundHandler.muteSFX(true);
+                ig.game.storage.set('azure-quiz-sfxOn', false);
             }
+
+            if (ig.game.bgmOn) {
+                ig.soundHandler.unmuteBGM(true);
+                ig.game.storage.set('azure-quiz-bgmOn', true);
+            } else {
+                ig.soundHandler.muteBGM(true);
+                ig.game.storage.set('azure-quiz-bgmOn', false);
+            }
+
+            // Legacy key (best effort): treat "soundOn" as SFX.
+            ig.game.storage.set('azure-quiz-soundOn', ig.game.sfxOn);
         },
         createRoundRect: function(x, y, w, h, r) {
             if (w < 2 * r) r = w / 2;
@@ -12318,8 +12414,37 @@ ig.module("game.main").requires("impact.game", "plugins.patches.webkit-image-smo
             if (_SETTINGS['Branding']['Splash']['Enabled'] || _SETTINGS['DeveloperBranding']['Splash']['Enabled']) {
                 this.spawnEntity(EntityPointerSelector, 50, 50);
             }
-            // MUSIC // Changed to use ig.soundHandler
-            //ig.soundHandler.bgmPlayer.play(ig.soundHandler.bgmPlayer.soundList.background);
+
+            // MUSIC
+            // Start BGM on boot (will be audible immediately on desktop; on mobile it will start once audio is unlocked).
+            try {
+                if (ig && ig.game && !ig.game.bgmOn) {
+                    // Respect the user's saved sound setting.
+                } else if (ig.soundHandler && ig.soundHandler.bgmPlayer && "function" === typeof ig.soundHandler.bgmPlayer.play) {
+                    var player = ig.soundHandler.bgmPlayer;
+
+                    // Avoid restarting if already playing.
+                    if (!player.bgmPlaying) {
+                        // If we're using HTML5 audio, try a muted-autoplay workaround (often allowed on reload).
+                        if (player.audio) {
+                            try {
+                                player.audio.muted = !0;
+                            } catch (e) {}
+                            player.play();
+                            setTimeout(function() {
+                                try {
+                                    if (ig && ig.game && ig.game.bgmOn && player && player.audio) player.audio.muted = !1;
+                                } catch (e) {}
+                            }, 250);
+                        } else {
+                            ig.soundHandler.unlockWebAudio && ig.soundHandler.unlockWebAudio();
+                            player.play();
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log(err)
+            }
         },
         fpsCount: function() {
             if (!this.fpsTimer) {

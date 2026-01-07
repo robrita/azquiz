@@ -1,6 +1,6 @@
-// Service Worker for Automotive History Trivia
-const CACHE_NAME = 'automotive-trivia-v1.0.1';
-const RUNTIME_CACHE = 'automotive-trivia-runtime';
+// Service Worker for Azure Cloud Certification Quiz
+const CACHE_NAME = 'azure-quiz-v1.0.1';
+const RUNTIME_CACHE = 'azure-quiz-runtime';
 
 // Files to cache immediately
 const PRECACHE_ASSETS = [
@@ -8,8 +8,9 @@ const PRECACHE_ASSETS = [
   './index.html',
   './game.css',
   './game.js',
-  './game.json',
+  './data/ai-engr.json',
   './manifest.json',
+  './media/audio/bgm.mp3',
   './media/graphics/promo/icons/128x128.png',
   './media/graphics/loading/ajax-loader.gif',
   './media/graphics/orientate/portrait.png',
