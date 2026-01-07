@@ -11547,12 +11547,24 @@ ig.module("game.entities.buttons.button-image").requires("game.entities.buttons.
                 if (null != this.textImg) {
                     var c, d;
                     c = this.textImg;
-                    // Use scaled dimensions for text wrapping
-                    var scaledWidth = this.img.width * this.imgScale;
-                    var scaledHeight = this.img.height * this.imgScale;
+                    // Use *drawn* dimensions for text wrapping/positioning so scaling stays centered.
+                    var scaledWidth = drawWidth;
+                    var scaledHeight = drawHeight;
                     d = 0.92 * scaledWidth;
-                    // Scale font size based on button scale - consistent size for all
-                    var baseFontSize = this.fontSize * this.imgScale;
+
+                    // Increase readability on desktop by scaling font size with button height.
+                    // Clamp keeps long answers from overflowing too easily.
+                    var sharedScale = 1;
+                    this.mother && "number" === typeof this.mother.answerFontScaleFactor && (sharedScale = this.mother.answerFontScaleFactor);
+
+                    // Desktop: slightly smaller base font so long questions/answers don't collide.
+                    var fontRatio = (ig.ua.mobile ? 0.19 : 0.22) * sharedScale;
+                    var maxRatio = (ig.ua.mobile ? 0.26 : 0.28) * sharedScale;
+                    var suggestedFontSize = Math.floor(scaledHeight * fontRatio);
+                    var minFontSize = ig.ua.mobile ? Math.floor(this.fontSize * 0.9 * sharedScale) : Math.floor(this.fontSize * this.imgScale * this.buttonScale * sharedScale);
+                    var maxFontSize = Math.floor(scaledHeight * maxRatio);
+                    var baseFontSize = Math.max(minFontSize, Math.min(suggestedFontSize, maxFontSize));
+
                     var f = new ig.Textwrapper(baseFontSize, "quicksand-bold"),
                         e = f.wrapText(c, d);
                     // Use consistent font size, only adjust vertical position based on lines
@@ -11574,7 +11586,7 @@ ig.module("game.entities.buttons.button-image").requires("game.entities.buttons.
                     ig.system.context.fillStyle =
                         "#ffffff";
                     ig.system.context.textAlign = "left";
-                    f.drawTextList(e, this.pos.x + c, this.pos.y + d)
+                    f.drawTextList(e, offsetX + c, offsetY + d)
                 }
                 b.restore()
             }
@@ -11763,6 +11775,7 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
         fontSize: 50,
         fontHeight: 50,
         maxWidthQuestion: 1E3,
+        answerFontScaleFactor: 1,
         imgBG: [new ig.Image("media/graphics/backgrounds/desktop/bg01.png"), new ig.Image("media/graphics/backgrounds/desktop/bg02.png"), new ig.Image("media/graphics/backgrounds/desktop/bg03.png"), new ig.Image("media/graphics/backgrounds/desktop/bg04.png"),
             new ig.Image("media/graphics/backgrounds/desktop/bg05.png")
         ],
@@ -11815,16 +11828,68 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             }
             return b
         },
+        computeAnswerFontScale: function(b) {
+            // Desktop: slightly smaller base font and more aggressive scaling for long answers.
+            // Same multiplier is applied to all buttons for a given question.
+            if (!b || 0 >= b) return ig.ua.mobile ? 1 : 0.85;
+            var startChars = ig.ua.mobile ? 45 : 38;
+            var endChars = ig.ua.mobile ? 150 : 140;
+            var baseFactor = ig.ua.mobile ? 1 : 0.85;
+            var minFactor = ig.ua.mobile ? 0.70 : 0.62;
+            if (b <= startChars) return baseFactor;
+            var t = (b - startChars) / (endChars - startChars);
+            t = Math.max(0, Math.min(1, t));
+            return baseFactor * (1 - t * (1 - minFactor))
+        },
         update: function() {
             1.3 > ig.system.height / ig.system.width ? this.landscapeUpdate() : this.portraitUpdate();
             this.parent()
         },
         landscapeUpdate: function() {
-            for (var b = 0.25 * ig.system.width, c = 0.5 * this.arrAnswer[0].size.x, d = 0; d < this.arrAnswer.length; d++) {
-                var f =
-                    this.arrAnswer[d];
-                0 == d % 2 ? (f.anchoredPositionX = -b - c, 1450 < ig.system.width && (f.anchoredPositionX = -700)) : (f.anchoredPositionX = b - c, 1450 < ig.system.width && (f.anchoredPositionX = 26));
-                f.anchoredPositionY = 1 < d ? 280 : 0
+            // Keep original layout on mobile landscape; apply the dynamic-below-question layout on desktop.
+            if (ig.ua.mobile) {
+                for (var b = 0.25 * ig.system.width, c = 0.5 * this.arrAnswer[0].size.x, d = 0; d < this.arrAnswer.length; d++) {
+                    var f = this.arrAnswer[d];
+                    0 == d % 2 ? (f.anchoredPositionX = -b - c, 1450 < ig.system.width && (f.anchoredPositionX = -700)) : (f.anchoredPositionX = b - c, 1450 < ig.system.width && (f.anchoredPositionX = 26));
+                    f.anchoredPositionY = 1 < d ? 280 : 0
+                }
+                return;
+            }
+
+            // Desktop/landscape is where question text can grow tall; keep answers below the question panel.
+            var screenH = ig.system.height;
+            var screenW = ig.system.width;
+
+            // Defensive: if buttons not ready yet.
+            if (!this.arrAnswer || 0 === this.arrAnswer.length) return;
+
+            var colOffset = 0.25 * screenW;
+            var halfBtnW = 0.5 * this.arrAnswer[0].size.x;
+
+            var buttonH = this.arrAnswer[0].size.y || 140;
+            var gapY = Math.max(20, 0.18 * buttonH);
+            var bottomPadding = Math.max(20, 0.06 * screenH);
+            var marginBelowQuestion = Math.max(18, 0.02 * screenH);
+
+            // `questionPanelBottomY` is computed in draw(); fall back to a safe-ish top region.
+            var questionBottom = this.questionPanelBottomY || (0.30 * screenH);
+            var minRow0AbsY = questionBottom + marginBelowQuestion;
+
+            // Keep both rows visible.
+            var maxRow0AbsY = screenH - bottomPadding - (2 * buttonH + gapY);
+            var row0AbsY = Math.min(minRow0AbsY, maxRow0AbsY);
+            // If content is too tall, at least keep the group on-screen.
+            row0AbsY = Math.max(row0AbsY, 0.08 * screenH);
+            var row1AbsY = row0AbsY + buttonH + gapY;
+
+            // Convert absolute top-left Y to anchored Y (anchor origin is center).
+            var row0Y = row0AbsY - 0.5 * screenH;
+            var row1Y = row1AbsY - 0.5 * screenH;
+
+            for (var i = 0; i < this.arrAnswer.length; i++) {
+                var btn = this.arrAnswer[i];
+                0 == i % 2 ? (btn.anchoredPositionX = -colOffset - halfBtnW, 1450 < screenW && (btn.anchoredPositionX = -700)) : (btn.anchoredPositionX = colOffset - halfBtnW, 1450 < screenW && (btn.anchoredPositionX = 26));
+                btn.anchoredPositionY = 1 < i ? row1Y : row0Y;
             }
         },
         portraitUpdate: function() {
@@ -11852,9 +11917,13 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             // Calculate total height needed
             var totalHeight = (buttonHeight * totalButtons) + (spacing * (totalButtons - 1));
             
-            // Start position - move buttons lower to avoid overlapping with question
-            // Positive value pushes buttons down from center
-            var startY = 10; // Start 10px below center
+            // Start position relative to center. Negative moves buttons up.
+            // Also enforce a bottom padding so the group never hugs the screen edge.
+            var bottomPadding = Math.max(30, screenHeight * 0.08);
+            var startY = -Math.min(90, screenHeight * 0.12);
+            var maxStartY = (screenHeight * 0.5) - bottomPadding - totalHeight;
+            startY = Math.min(startY, maxStartY);
+            startY = Math.max(startY, -screenHeight * 0.5 + 20);
             
             for (var b = 0; b < this.arrAnswer.length; b++) {
                 var c = this.arrAnswer[b];
@@ -11914,6 +11983,15 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
                     b.splice(e, 1);
                     this.arrAnswer.push(c)
                 } else c = this.arrAnswer[f], e = Math.floor(Math.random() * b.length), c.textImg = _Question[this.numQuestion].textAnswer[b[e] + 1], c.name = "a" + (b[e] + 1).toString(), b.splice(e, 1)
+
+            // Compute shared font scaling based on the longest answer text.
+            var maxChars = 0;
+            for (var i = 0; i < this.numAnswer; i++) {
+                var txt = this.arrAnswer[i] && null != this.arrAnswer[i].textImg ? ("" + this.arrAnswer[i].textImg) : "";
+                txt = txt.replace(/\s+/g, " ").trim();
+                maxChars = Math.max(maxChars, txt.length);
+            }
+            this.answerFontScaleFactor = this.computeAnswerFontScale(maxChars);
         },
         draw: function() {
             var b = ig.system.context,
@@ -11943,12 +12021,19 @@ ig.module("game.entities.controller.game-control").requires("impact.entity", "ga
             var questionPanelScaleX = ig.ua.mobile ? Math.min(ig.responsive.scaleX, ig.responsive.scaleY) * 2.2 : Math.min(ig.responsive.scaleX, ig.responsive.scaleY) * 1.6;
             var verticalPadding = ig.ua.mobile ? 60 : 50;
             var dynamicOverlayHeight = (f.length * questionLineHeight) + (verticalPadding * 2);
-            var overlayWidth = this.imgQuestion.width * questionPanelScaleX;
-            var questionYOffset = ig.ua.mobile ? -580 : -560;
-            var overlayY = c.y + questionYOffset;
+            // Clamp overlay width so it doesn't exceed the viewport.
+            var maxOverlayWidth = ig.system.width * 0.98;
+            var scaleX = Math.min(questionPanelScaleX, maxOverlayWidth / this.imgQuestion.width);
+            var overlayWidth = this.imgQuestion.width * scaleX;
+
+            // Position from the top so it never renders off-screen on desktop.
+            var topMargin = ig.ua.mobile ? Math.max(30, ig.system.height * 0.05) : Math.max(30, ig.system.height * 0.06);
+            var overlayY = topMargin + dynamicOverlayHeight * 0.5;
+
+            // Persist metrics for layout calculations in update() (e.g., answer button placement).
+            this.questionPanelBottomY = topMargin + dynamicOverlayHeight;
             
             // Calculate scale factors for the overlay image
-            var scaleX = questionPanelScaleX;
             var scaleY = dynamicOverlayHeight / this.imgQuestion.height;
             
             // Draw the original overlay image with dynamic height
